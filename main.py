@@ -182,6 +182,7 @@ def run_gui_app():
     """
     logger.info("--- Starting Umutrans Desktop Control Panel GUI ---")
     app = QApplication.instance() or QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     window = ControlPanelWindow()
     window.show()
     sys.exit(app.exec())

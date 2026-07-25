@@ -138,6 +138,7 @@ class ControlPanelWindow(QMainWindow):
         self.settings_mgr = SettingsManager()
         self.pipeline = None
         self.overlay = None
+        self.is_translating = False
         self.region_selector = None
         self.temp_capture_engine = ScreenCaptureEngine()
         self.flashcard_mgr = FlashcardManager()
@@ -432,37 +433,48 @@ class ControlPanelWindow(QMainWindow):
         QMessageBox.information(self, "Başarılı", "Görünüm ve altyazı ayarları kaydedildi ve uygulandı!")
 
     def toggle_translator(self):
-        if self.pipeline is None:
-            selected_mon = self.monitor_combo.currentData() or 1
-            self.overlay = TranslationOverlayWindow(target_monitor_index=selected_mon)
-            self.overlay.show()
-
-            self.pipeline = AsyncPipelineController()
-            if selected_mon is not None:
-                self.pipeline.capture_engine.set_monitor_index(selected_mon)
-
-
-            self.pipeline.translations_updated.connect(self._on_translations_received)
-            self.pipeline.force_immediate_scan()
-
-            self.start_btn.setText("⏸ Çeviriyi Durdur (Ctrl+Shift+S)")
-            self.start_btn.setStyleSheet("background-color: #DC2626;")
-            self.status_badge.setText("● Canlı İzleme Aktif")
-            self.status_badge.setStyleSheet("color: #22C55E; background: #1C3322; padding: 6px 14px; border-radius: 12px;")
-            self.append_log(">>> arc Ekran Çevirisi Başlatıldı.")
-        else:
-            self.pipeline.stop()
-            self.pipeline = None
+        if self.is_translating:
+            # Pause translation without closing windows or killing threads
+            self.is_translating = False
+            if self.pipeline:
+                self.pipeline.pause_pipeline()
             if self.overlay:
                 self.overlay.clear_translations()
-                self.overlay.close()
-                self.overlay = None
+                self.overlay.hide()
 
             self.start_btn.setText("▶ Çeviriyi Başlat (Ctrl+Shift+S)")
             self.start_btn.setStyleSheet("background-color: #0284C7;")
             self.status_badge.setText("● Çeviri Durduruldu")
             self.status_badge.setStyleSheet("color: #EF4444; background: #331C1C; padding: 6px 14px; border-radius: 12px;")
             self.append_log(">>> arc Çevirici Durduruldu.")
+        else:
+            # Start / Resume translation
+            self.is_translating = True
+            selected_mon = self.monitor_combo.currentData() or 1
+
+            if self.overlay is None:
+                self.overlay = TranslationOverlayWindow(target_monitor_index=selected_mon)
+            else:
+                self.overlay.set_target_monitor_index(selected_mon)
+
+            self.overlay.show()
+
+            if self.pipeline is None:
+                self.pipeline = AsyncPipelineController()
+                self.pipeline.translations_updated.connect(self._on_translations_received)
+
+            if selected_mon is not None:
+                self.pipeline.capture_engine.set_monitor_index(selected_mon)
+            if Config.CAPTURE_REGION:
+                self.pipeline.capture_engine.region = Config.CAPTURE_REGION
+
+            self.pipeline.resume_pipeline()
+
+            self.start_btn.setText("⏸ Çeviriyi Durdur (Ctrl+Shift+S)")
+            self.start_btn.setStyleSheet("background-color: #DC2626;")
+            self.status_badge.setText("● Canlı İzleme Aktif")
+            self.status_badge.setStyleSheet("color: #22C55E; background: #1C3322; padding: 6px 14px; border-radius: 12px;")
+            self.append_log(">>> arc Ekran Çevirisi Başlatıldı.")
 
     def open_region_selector(self):
         selected_mon = self.monitor_combo.currentData()

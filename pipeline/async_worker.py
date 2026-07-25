@@ -104,6 +104,27 @@ class AsyncPipelineController(QObject):
         interval_ms = int(1000.0 / Config.CAPTURE_FPS)
         self.timer.start(interval_ms)
 
+    def pause_pipeline(self):
+        """
+        Pauses live capture and translation safely without terminating worker threads.
+        """
+        self._running = False
+        self.timer.stop()
+        self.ocr_busy = False
+        self.trans_busy = False
+
+    def resume_pipeline(self):
+        """
+        Resumes live capture and translation.
+        """
+        self._running = True
+        self.ocr_busy = False
+        self.trans_busy = False
+        self.last_ocr_timestamp = 0.0
+        interval_ms = int(1000.0 / Config.CAPTURE_FPS)
+        self.timer.start(interval_ms)
+        self.force_immediate_scan()
+
     def force_immediate_scan(self):
         """
         Forces an immediate frame capture and OCR scan upon user start.

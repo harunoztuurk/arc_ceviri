@@ -2,7 +2,7 @@ import os
 
 class Config:
     # App Name
-    APP_NAME = "Umutrans"
+    APP_NAME = "arc"
 
     # Screen Capture settings
     CAPTURE_REGION = None  
@@ -23,7 +23,7 @@ class Config:
     LLM_TIMEOUT = 3.0  # seconds
     
     TRANSLATION_SYSTEM_PROMPT = (
-        "Sen uzman bir Umutrans oyun ve ekran altyazı çevirmenisin. "
+        "Sen uzman bir arc oyun ve ekran altyazı çevirmenisin. "
         "Aşağıdaki İngilizce metni doğal, akıcı ve bağlama uygun bir Türkçe ile çevir. "
         "Sadece çevrilmiş Türkçe metni döndür."
     )

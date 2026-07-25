@@ -180,7 +180,7 @@ def run_gui_app():
     Launches full Desktop GUI Dashboard application with Control Panel,
     Region Selector, Flashcards Manager, and Transparent Overlay.
     """
-    logger.info("--- Starting Umutrans Desktop Control Panel GUI ---")
+    logger.info("--- Starting arc Desktop Control Panel GUI ---")
     app = QApplication.instance() or QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     window = ControlPanelWindow()

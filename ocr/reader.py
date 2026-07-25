@@ -69,7 +69,7 @@ class OCRReader:
         text_lower = text.lower().strip()
         
         ignored_keywords = [
-            "umutrans", "antigravity", "gerçek zamanlı", "ekran çevir", "çeviriyi başlat",
+            "arc", "antigravity", "gerçek zamanlı", "ekran çevir", "çeviriyi başlat",
             "çeviriyi durdur", "ekran bölgesi", "kelime kart", "canlı çeviri",
             "bağlantısız", "lokal llm", "locked desktop", "screen capture",
             "[çeviri]", "[en]:", "[tr]:", "pos:", "conf:", "frame #", "izlenecek ekran",

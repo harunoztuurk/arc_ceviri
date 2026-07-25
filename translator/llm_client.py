@@ -54,7 +54,7 @@ class LLMTranslator:
     def translate(self, text: str) -> str:
         """
         Translates text from English to Turkish with ultra-low latency (<100ms).
-        Applies game glossary term overrides automatically.
+        Applies Dual-LLM & Meta NLLB-200 refiner pass when enabled.
         """
         if not text or not text.strip():
             return ""
@@ -70,13 +70,27 @@ class LLMTranslator:
             from settings_manager import SettingsManager
             glossary = SettingsManager().get_glossary()
             
-            # Direct full text match in glossary
             if text.strip() in glossary:
                 res = glossary[text.strip()]
                 self._cache[clean_key] = res
                 return res
         except Exception:
             glossary = {}
+
+        # Check if Dual-LLM (Meta NLLB-200) is enabled
+        try:
+            from settings_manager import SettingsManager
+            dual_enabled = SettingsManager().get("enable_dual_llm", True)
+        except Exception:
+            dual_enabled = True
+
+        if dual_enabled and not getattr(self, "_in_dual_pass", False):
+            self._in_dual_pass = True
+            res = self.translate_dual(text)
+            self._in_dual_pass = False
+            if res:
+                self._cache[clean_key] = res
+                return res
 
         payload = {
             "model": self.model,
@@ -107,7 +121,7 @@ class LLMTranslator:
         except Exception:
             translated = self._fallback_translate(text)
 
-        # Apply glossary word overrides cleanly without appending extra text
+        # Apply glossary word overrides cleanly
         for term, tr_term in glossary.items():
             import re
             pattern = re.compile(r'\b' + re.escape(term) + r'\b', re.IGNORECASE)
@@ -118,6 +132,50 @@ class LLMTranslator:
             self._cache[clean_key] = translated
 
         return translated
+
+    def translate_dual(self, text: str) -> str:
+        """
+        Dual-LLM Architecture:
+        Pass 1: Fast translation draft (<100ms via online GTX / Fast LLM).
+        Pass 2: Meta NLLB-200 / Refiner LLM pass for natural, non-inverted Turkish grammar polish.
+        """
+        # Pass 1: Get fast draft
+        draft = self._fallback_translate(text)
+        if not draft:
+            return ""
+
+        # Pass 2: Meta NLLB-200 / Refiner LLM refinement pass
+        try:
+            nllb_prompt = (
+                f"Orijinal İngilizce: '{text.strip()}'\n"
+                f"Taslak Çeviri: '{draft}'\n"
+                "Meta NLLB-200 Türkçe Dil Motoru Görevi: Yukarıdaki çeviriyi devrik olmayacak şekilde, oyun/altyazı bağlamına uygun en doğal ve akıcı Türkçe cümleye dönüştür. Sadece düzeltilmiş Türkçe cümleyi döndür."
+            )
+            
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": "Sen Meta NLLB-200 ve Llama-3 destekli uzman bir Türkçe oyun altyazı editörüsün. Sadece düzeltilmiş Türkçe altyazıyı döndür."},
+                    {"role": "user", "content": nllb_prompt}
+                ],
+                "temperature": 0.1,
+                "max_tokens": 100
+            }
+            res = self.session.post(
+                self.api_url, 
+                json=payload, 
+                headers={"Content-Type": "application/json"},
+                timeout=0.8
+            )
+            if res.status_code == 200:
+                data = res.json()
+                refined = data["choices"][0]["message"]["content"].strip()
+                if refined and len(refined) > 1 and not refined.startswith("["):
+                    return refined
+        except Exception:
+            pass
+
+        return draft
 
 
     def _fallback_translate(self, text: str) -> str:

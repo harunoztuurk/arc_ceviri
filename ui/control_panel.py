@@ -347,6 +347,15 @@ class ControlPanelWindow(QMainWindow):
         )
         form_layout.addRow("📌 Metin Sabitleme:", self.keep_static_chk)
 
+        # Çift Yapay Zeka (Dual-LLM & Meta NLLB-200) CheckBox
+        self.dual_llm_chk = QCheckBox("Çift Yapay Zeka (Dual-LLM & Meta NLLB-200) Akıcı Türkçe Parlatma Modu", parent)
+        self.dual_llm_chk.setChecked(bool(self.settings_mgr.get("enable_dual_llm", True)))
+        self.dual_llm_chk.setStyleSheet("color: #38BDF8; font-weight: bold;")
+        self.dual_llm_chk.stateChanged.connect(
+            lambda state: self.settings_mgr.set("enable_dual_llm", state == 2)
+        )
+        form_layout.addRow("🧠 Çift LLM Motoru:", self.dual_llm_chk)
+
         # Fare Makro Tuşu Bilgisi
         macro_info = QLabel("🖱️ Fare Kelime Çeviri Makrosu (Alt+T): İmleci istediğiniz kelimenin üzerine getirip Alt+T'ye basın.", parent)
         macro_info.setStyleSheet("color: #FDE047; font-weight: bold; background: #0F172A; padding: 6px; border-radius: 4px;")

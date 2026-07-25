@@ -19,6 +19,8 @@ DEFAULT_SETTINGS = {
     "ocr_languages": ["en"],
 
     "target_language": "tr",
+    "enable_dual_llm": True,
+    "secondary_model": "Meta NLLB-200 (Refiner)",
     "hotkey_toggle": "Ctrl+Shift+S",
     "hotkey_region": "Alt+R",
     "hotkey_macro": "Alt+T",

@@ -24,8 +24,10 @@ Aynı zamanda çevrilen tüm kelimeleri **tekrarsız (duplicate-free)** veritaba
   - `Alt + T`: **🖱️ Fare Makro Çeviri Tuşu:** Farenin bulunduğu yerdeki kelimeyi/cümleyi anında okuyup yüzen kartta çevirir.
 - 📌 **Metin Sabitleme Desteği (Static Text Lock):**
   - Ekranda geçen metin veya altyazı değişmediği sürece (oyun duraklatıldığında veya okuma yaparken) çevrilen cümle ekranda sabit kalır, kaybolmaz.
-- 🧠 **Çift Çeviri Motoru (Lokal AI & Çevrimiçi Fallback):**
-  - **Ollama / Jan.ai / LM Studio** yerel yapay zeka sunucularını otomatik algılar. Yerel AI kapalıysa kesintisiz hızlı çevrimiçi çeviri motoruna geçer.
+- 🧠 **Çift Yapay Zeka Çeviri Motoru (Dual-LLM & Meta NLLB-200):**
+  - **1. Katman (Hızlı Çevirici):** Metni ~50ms içinde anında çevirip ekrana basar.
+  - **2. Katman (Meta NLLB-200 & Llama-3 Refiner):** Arka planda çeviriyi Türkçe gramerine, deyimlere ve oyun bağlamına göre parlatıp mükemmelleştirir.
+  - **Ollama / Jan.ai / LM Studio** yerel yapay zeka sunucularını otomatik algılar. Yerel AI kapalıysa kesintisiz çevrimiçi altyapıyı kullanır.
 - 📖 **Oyun Terim Sözlüğü (Glossary System):**
   - *Health Potion*, *XP*, *Vault* gibi oyuna özel terimleri kendi Türkçe karşılıklarınızla eşleyebilirsiniz.
 - 🎯 **Kelime Alıştırması & Quiz Modu:**

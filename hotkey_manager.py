@@ -12,6 +12,7 @@ class GlobalHotkeyManager(QObject):
     """
     toggle_requested = pyqtSignal()
     region_requested = pyqtSignal()
+    macro_translate_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -22,25 +23,26 @@ class GlobalHotkeyManager(QObject):
         try:
             from pynput import keyboard
 
-            def on_press(key):
-                pass
-
-            # Define combinations
-            COMBINATIONS = [
-                {keyboard.Key.ctrl_l, keyboard.Key.shift, keyboard.KeyCode.from_char('s')},
-                {keyboard.Key.ctrl_l, keyboard.Key.shift, keyboard.KeyCode.from_char('S')},
-                {keyboard.Key.ctrl_r, keyboard.Key.shift, keyboard.KeyCode.from_char('s')},
-            ]
-
             current_keys = set()
 
             def on_key_press(key):
                 current_keys.add(key)
+                
                 # Check toggle (Ctrl+Shift+S)
                 if (keyboard.Key.ctrl_l in current_keys or keyboard.Key.ctrl_r in current_keys) and \
                    (keyboard.Key.shift in current_keys or keyboard.Key.shift_r in current_keys) and \
                    (keyboard.KeyCode.from_char('s') in current_keys or keyboard.KeyCode.from_char('S') in current_keys):
                     self.toggle_requested.emit()
+
+                # Check region selector (Alt+R)
+                if (keyboard.Key.alt_l in current_keys or keyboard.Key.alt_r in current_keys or keyboard.Key.alt in current_keys or keyboard.Key.alt_gr in current_keys) and \
+                   (keyboard.KeyCode.from_char('r') in current_keys or keyboard.KeyCode.from_char('R') in current_keys):
+                    self.region_requested.emit()
+
+                # Check mouse hover macro (Alt+T)
+                if (keyboard.Key.alt_l in current_keys or keyboard.Key.alt_r in current_keys or keyboard.Key.alt in current_keys or keyboard.Key.alt_gr in current_keys) and \
+                   (keyboard.KeyCode.from_char('t') in current_keys or keyboard.KeyCode.from_char('T') in current_keys):
+                    self.macro_translate_requested.emit()
 
             def on_key_release(key):
                 if key in current_keys:

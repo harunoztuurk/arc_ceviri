@@ -15,11 +15,13 @@ DEFAULT_SETTINGS = {
     "border_color": "#38BDF8",
     "auto_hide_seconds": 6.0,
     "subtitle_position_mode": "bottom_center",
+    "keep_static_subtitles": True,
     "ocr_languages": ["en"],
 
     "target_language": "tr",
     "hotkey_toggle": "Ctrl+Shift+S",
     "hotkey_region": "Alt+R",
+    "hotkey_macro": "Alt+T",
     "glossary": {
         "HP": "Can Puanı",
         "MP": "Büyü Puanı",

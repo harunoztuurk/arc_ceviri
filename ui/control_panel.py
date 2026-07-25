@@ -7,9 +7,9 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
     QPushButton, QTextEdit, QTableWidget, QTableWidgetItem, QHeaderView,
     QDialog, QLineEdit, QFormLayout, QFrame, QComboBox, QTabWidget,
-    QSlider, QSpinBox, QMessageBox, QRadioButton, QButtonGroup
+    QSlider, QSpinBox, QMessageBox, QRadioButton, QButtonGroup, QCheckBox
 )
-from PyQt6.QtGui import QFont, QIcon, QColor
+from PyQt6.QtGui import QFont, QIcon, QColor, QCursor
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QSize
 
 from config import Config
@@ -142,10 +142,13 @@ class ControlPanelWindow(QMainWindow):
         self.is_translating = False
         self.region_selector = None
         self.temp_capture_engine = ScreenCaptureEngine()
+        self.temp_ocr_reader = OCRReader()
+        self.temp_llm_translator = LLMTranslator()
         self.flashcard_mgr = FlashcardManager()
 
         self.hotkey_mgr = GlobalHotkeyManager(self)
         self.hotkey_mgr.toggle_requested.connect(self.toggle_translator)
+        self.hotkey_mgr.macro_translate_requested.connect(self.on_mouse_macro_translate)
 
         self._setup_ui()
         self._apply_stylesheet()
@@ -334,6 +337,20 @@ class ControlPanelWindow(QMainWindow):
 
         self.lang_combo.addItems(["Türkçe (TR)", "İngilizce (EN)", "Almanca (DE)", "Fransızca (FR)"])
         form_layout.addRow("🌐 Hedef Çeviri Dili:", self.lang_combo)
+
+        # Metin Değişmedikçe Çeviriyi Sabit Tut (CheckBox)
+        self.keep_static_chk = QCheckBox("Metin Değişmedikçe Çeviriyi Ekranda Sabit Tut (Oyun/Metin Durduğunda Gizleme)", parent)
+        self.keep_static_chk.setChecked(bool(self.settings_mgr.get("keep_static_subtitles", True)))
+        self.keep_static_chk.setStyleSheet("color: #38BDF8; font-weight: bold;")
+        self.keep_static_chk.stateChanged.connect(
+            lambda state: self.settings_mgr.set("keep_static_subtitles", state == 2)
+        )
+        form_layout.addRow("📌 Metin Sabitleme:", self.keep_static_chk)
+
+        # Fare Makro Tuşu Bilgisi
+        macro_info = QLabel("🖱️ Fare Kelime Çeviri Makrosu (Alt+T): İmleci istediğiniz kelimenin üzerine getirip Alt+T'ye basın.", parent)
+        macro_info.setStyleSheet("color: #FDE047; font-weight: bold; background: #0F172A; padding: 6px; border-radius: 4px;")
+        form_layout.addRow("⚡ Makro Çeviri Tuşu:", macro_info)
 
         layout.addLayout(form_layout)
 
@@ -576,6 +593,67 @@ class ControlPanelWindow(QMainWindow):
     def open_quiz_dialog(self):
         dialog = QuizDialog(self)
         dialog.exec()
+
+    def on_mouse_macro_translate(self):
+        """
+        Triggered globally when Alt+T is pressed.
+        Captures screen area around mouse cursor, runs OCR,
+        translates the word/sentence under the cursor, and displays floating tooltip.
+        """
+        try:
+            pos = QCursor.pos()
+            mx, my = pos.x(), pos.y()
+
+            box_w, box_h = 420, 180
+            left = max(0, mx - box_w // 2)
+            top = max(0, my - box_h // 2)
+
+            bbox = (left, top, left + box_w, top + box_h)
+            from PIL import ImageGrab
+            import numpy as np
+            import cv2
+
+            pil_img = ImageGrab.grab(bbox=bbox, all_screens=True)
+            frame_rgb = np.array(pil_img)
+            frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+
+            raw_blocks = self.temp_ocr_reader.extract_text(frame_bgr)
+            if not raw_blocks:
+                self.append_log(f"⚠️ Fare konumunda ({mx}, {my}) okunabilir metin bulunamadı.")
+                return
+
+            cx, cy = box_w // 2, box_h // 2
+            best_block = None
+            min_dist = float('inf')
+
+            for b in raw_blocks:
+                rx, ry, rw, rh = b["rect"]
+                bcx = rx + rw / 2
+                bcy = ry + rh / 2
+                dist = ((bcx - cx)**2 + (bcy - cy)**2)**0.5
+                if dist < min_dist:
+                    min_dist = dist
+                    best_block = b
+
+            if not best_block:
+                return
+
+            orig_text = best_block["text"].strip()
+            if not orig_text or len(orig_text) < 2:
+                return
+
+            trans_text = self.temp_llm_translator.translate(orig_text)
+
+            selected_mon = self.monitor_combo.currentData() or 1
+            if self.overlay is None:
+                self.overlay = TranslationOverlayWindow(target_monitor_index=selected_mon)
+
+            self.overlay.show_mouse_tooltip(orig_text, trans_text, mx, my)
+            self.flashcard_mgr.add_card(english=orig_text, turkish=trans_text, context="Fare Makro Çeviri")
+            self.append_log(f"🖱️ Fare Makro Çeviri (Alt+T): '{orig_text}' ➔ '{trans_text}'")
+            self.load_cards_table()
+        except Exception as e:
+            logger.error(f"Error in on_mouse_macro_translate: {e}")
 
     def play_selected_tts(self):
         row = self.cards_table.currentRow()

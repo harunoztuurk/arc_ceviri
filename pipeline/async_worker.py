@@ -172,8 +172,14 @@ class AsyncPipelineController(QObject):
         self.ocr_busy = False
         
         if not grouped_blocks:
-            # Clear overlay if no text detected
-            self.translations_updated.emit([])
+            try:
+                from settings_manager import SettingsManager
+                keep_static = SettingsManager().get("keep_static_subtitles", True)
+            except Exception:
+                keep_static = True
+
+            if not keep_static:
+                self.translations_updated.emit([])
             return
 
         if not self.trans_busy:

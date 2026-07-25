@@ -19,8 +19,11 @@ Aynı zamanda çevrilen tüm kelimeleri **tekrarsız (duplicate-free)** veritaba
 - 👁️ **Şeffaf Saydam Katman (Click-Through Overlay):**
   - Tıklamaları engellemez, oyun içi kontrolünüzü veya mouse hareketlerinizi kısıtlamaz.
 - ⌨️ **Global Kısayol Tuşları (Global Hotkeys):**
-  - `Ctrl + Shift + S`: Oyundayken pencere değiştirmeden çeviriyi başlatır/durdurur.
+  - `Ctrl + Shift + S`: Oyundayken pencere değiştirmeden canlı çeviriyi başlatır/durdurur.
   - `Alt + R`: Çevrilecek ekran bölgesini seçer.
+  - `Alt + T`: **🖱️ Fare Makro Çeviri Tuşu:** Farenin bulunduğu yerdeki kelimeyi/cümleyi anında okuyup yüzen kartta çevirir.
+- 📌 **Metin Sabitleme Desteği (Static Text Lock):**
+  - Ekranda geçen metin veya altyazı değişmediği sürece (oyun duraklatıldığında veya okuma yaparken) çevrilen cümle ekranda sabit kalır, kaybolmaz.
 - 🧠 **Çift Çeviri Motoru (Lokal AI & Çevrimiçi Fallback):**
   - **Ollama / Jan.ai / LM Studio** yerel yapay zeka sunucularını otomatik algılar. Yerel AI kapalıysa kesintisiz hızlı çevrimiçi çeviri motoruna geçer.
 - 📖 **Oyun Terim Sözlüğü (Glossary System):**

@@ -7,15 +7,16 @@ from config import Config
 
 class TranslationCard(QWidget):
     """
-    Sub-widget card rendered directly over/under target OCR screen coordinates.
+    Sub-widget card rendered as a clean Cinema/Movie Subtitle bar at the bottom center of the monitor.
     """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(8, 6, 8, 6)
+        self.layout.setContentsMargins(18, 10, 18, 10)
         
         self.label = QLabel(self)
         self.label.setWordWrap(True)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.apply_style()
         self.layout.addWidget(self.label)
 
@@ -35,15 +36,17 @@ class TranslationCard(QWidget):
             card_bg = Config.OVERLAY_CARD_BG
             border_color = Config.OVERLAY_BORDER_COLOR
 
-        font = QFont(font_family, font_size, QFont.Weight.Bold)
+        # Subtitle font (default 16pt - 18pt bold for clear reading)
+        font = QFont(font_family, max(15, font_size), QFont.Weight.Bold)
         self.label.setFont(font)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         self.setStyleSheet(f"""
             QWidget {{
                 background-color: {card_bg};
                 color: {text_color};
-                border: 1px solid {border_color};
-                border-radius: 6px;
+                border: 1.5px solid {border_color};
+                border-radius: 10px;
             }}
             QLabel {{
                 background-color: transparent;
@@ -58,7 +61,7 @@ class TranslationCard(QWidget):
 class TranslationOverlayWindow(QWidget):
     """
     Full-screen transparent, click-through overlay window.
-    Renders live translation cards over captured screen coordinates across target monitor.
+    Renders live cinema-style subtitles anchored at bottom center of the target screen.
     """
     def __init__(self, target_monitor_index: int = 1):
         super().__init__()
@@ -108,7 +111,7 @@ class TranslationOverlayWindow(QWidget):
 
     def update_translations(self, items: List[Dict[str, Any]]):
         """
-        Updates displayed translation cards based on target screen geometry and OCR text.
+        Updates displayed subtitle overlay anchored cleanly at the bottom center of the screen.
         """
         if not items:
             return
@@ -119,7 +122,7 @@ class TranslationOverlayWindow(QWidget):
         for card in self.cards:
             card.hide()
 
-        while len(self.cards) < len(items):
+        if not self.cards:
             card = TranslationCard(self)
             self.cards.append(card)
 
@@ -132,33 +135,53 @@ class TranslationOverlayWindow(QWidget):
 
         target_geo = self.get_target_screen_geometry()
 
-        if pos_mode == "bottom_center":
-            # Combine all translated sentences into a clean subtitle block at target monitor bottom center
-            combined_trans = " \n ".join([item.get("trans", "") for item in items if item.get("trans", "").strip()])
-            if combined_trans:
-                card = self.cards[0]
-                card.apply_style()
-                card.set_text(combined_trans)
-                
-                card_w = card.sizeHint().width()
-                card_h = card.sizeHint().height()
-                
-                # Position strictly at bottom center of target monitor
-                pos_x = target_geo.x() + max(0, int((target_geo.width() - card_w) / 2))
-                pos_y = target_geo.y() + max(0, int(target_geo.height() - card_h - 80))
-                
-                card.move(pos_x, pos_y)
-                card.show()
-        else:
-            valid_count = 0
-            for item in items:
-                trans_text = item.get("trans", "")
-                if not trans_text or not trans_text.strip():
-                    continue
+        # Clean and filter subtitle lines (prioritize dialogue sentences, max 3 lines)
+        valid_lines = []
+        for item in items:
+            trans = item.get("trans", "").strip()
+            orig = item.get("orig", "").strip()
+            # Ignore empty strings or error fallbacks
+            if not trans or trans.startswith("[") or len(trans) < 2:
+                continue
+            # Ignore duplicate lines
+            if trans not in valid_lines:
+                valid_lines.append(trans)
 
-                card = self.cards[valid_count]
+        if not valid_lines:
+            return
+
+        if pos_mode == "bottom_center":
+            # Pick top 3 main subtitle lines max to prevent huge text walls
+            selected_lines = valid_lines[:3]
+            combined_trans = "\n".join(selected_lines)
+            
+            card = self.cards[0]
+            card.apply_style()
+            card.set_text(combined_trans)
+            
+            max_w = int(target_geo.width() * 0.75)
+            card_w = min(max_w, max(380, card.sizeHint().width() + 40))
+            card.setFixedWidth(card_w)
+            card.adjustSize()
+            
+            card_h = card.height()
+            
+            # Anchor strictly at bottom center (70px above bottom edge of target monitor)
+            pos_x = target_geo.x() + max(0, int((target_geo.width() - card_w) / 2))
+            pos_y = target_geo.y() + max(0, int(target_geo.height() - card_h - 70))
+            
+            card.move(pos_x, pos_y)
+            card.show()
+        else:
+            # Relative positioning mode
+            while len(self.cards) < len(valid_lines):
+                c = TranslationCard(self)
+                self.cards.append(c)
+
+            for idx, trans_text in enumerate(valid_lines[:5]):
+                card = self.cards[idx]
                 card.apply_style()
-                valid_count += 1
+                item = items[idx] if idx < len(items) else items[0]
                 x, y, w, h = item["rect"]
                 
                 card.set_text(trans_text)
@@ -172,8 +195,6 @@ class TranslationOverlayWindow(QWidget):
                 card.move(pos_x, pos_y)
                 card.show()
 
-
-
         # Reset clear timer based on settings
         try:
             from settings_manager import SettingsManager
@@ -186,4 +207,3 @@ class TranslationOverlayWindow(QWidget):
     def clear_translations(self):
         for card in self.cards:
             card.hide()
-

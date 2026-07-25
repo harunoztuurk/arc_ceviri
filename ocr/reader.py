@@ -63,8 +63,8 @@ class OCRReader:
 
     def is_app_ui_text(self, text: str) -> bool:
         """
-        Filters out self-referential text produced by the app's own Control Panel,
-        overlay cards, buttons, or log windows to prevent infinite OCR loops.
+        Filters out self-referential text, system hardware specs, or random single-word UI noise
+        to prevent cluttering live subtitle output.
         """
         text_lower = text.lower().strip()
         
@@ -73,7 +73,8 @@ class OCRReader:
             "çeviriyi durdur", "ekran bölgesi", "kelime kart", "canlı çeviri",
             "bağlantısız", "lokal llm", "locked desktop", "screen capture",
             "[çeviri]", "[en]:", "[tr]:", "pos:", "conf:", "frame #", "izlenecek ekran",
-            "kaydedilen kelime", "dışa aktar", "çeviri akış", "durduruldu", "aktif", "arc"
+            "kaydedilen kelime", "dışa aktar", "çeviri akış", "durduruldu", "aktif", "arc",
+            "tomahawk", "motaerboard", "motherboard", "intel", "amd", "nvidia", "wifi", "geforce"
         ]
         
         for kw in ignored_keywords:

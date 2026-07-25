@@ -107,10 +107,12 @@ class LLMTranslator:
         except Exception:
             translated = self._fallback_translate(text)
 
-        # Apply inline glossary replacements to translated text if key terms present
+        # Apply glossary word overrides cleanly without appending extra text
         for term, tr_term in glossary.items():
-            if term.lower() in text.lower() and tr_term not in translated:
-                translated += f" ({term}: {tr_term})"
+            import re
+            pattern = re.compile(r'\b' + re.escape(term) + r'\b', re.IGNORECASE)
+            if pattern.search(text) and tr_term.lower() not in translated.lower():
+                translated = pattern.sub(tr_term, translated)
 
         if translated:
             self._cache[clean_key] = translated

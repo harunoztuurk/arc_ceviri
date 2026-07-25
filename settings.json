@@ -1,0 +1,22 @@
+{
+    "font_family": "Segoe UI",
+    "font_size": 16,
+    "text_color": "#FDE047",
+    "card_bg_color": "rgba(15, 23, 42, 0.90)",
+    "border_color": "#38BDF8",
+    "auto_hide_seconds": 6.0,
+    "subtitle_position_mode": "bottom_center",
+    "ocr_languages": [
+        "en"
+    ],
+    "target_language": "tr",
+    "hotkey_toggle": "Ctrl+Shift+S",
+    "hotkey_region": "Alt+R",
+    "glossary": {
+        "HP": "Can Puanı",
+        "MP": "Büyü Puanı",
+        "XP": "Deneyim Puanı",
+        "Vault": "Mahzen / Kasa",
+        "Quest": "Görev"
+    }
+}

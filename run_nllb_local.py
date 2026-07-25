@@ -10,11 +10,16 @@ print("="*60)
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-model_name = "facebook/nllb-200-distilled-600M"
-print(f"\nModel yükleniyor ({model_name})... Lütfen bekleyin...\n")
+local_path = os.path.expanduser(r"~\.cache\huggingface\hub\models--facebook--nllb-200-distilled-600M\snapshots\main")
+if os.path.exists(os.path.join(local_path, "pytorch_model.bin")):
+    model_name_or_path = local_path
+    print(f"\nModel yerel önbellekten yükleniyor ({local_path})... Lütfen bekleyin...\n")
+else:
+    model_name_or_path = "facebook/nllb-200-distilled-600M"
+    print(f"\nModel indiriliyor/yükleniyor ({model_name_or_path})... Lütfen bekleyin...\n")
 
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path)
 
 target_lang_id = tokenizer.convert_tokens_to_ids("tur_Latn")
 

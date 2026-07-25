@@ -58,23 +58,29 @@ for filename in files:
     except Exception as e:
         print(f"\n [Hata] {filename}: {e}")
 
-print("\n İndirme İşlemi Bitti! Şimdi Model Test Ediliyor...\n")
+print("\n İndirme İşlemi Bitti! Şimdi Meta NLLB-200 Modeli Yükleniyor...\n")
 
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 tokenizer = AutoTokenizer.from_pretrained(cache_dir)
 model = AutoModelForSeq2SeqLM.from_pretrained(cache_dir)
 
-translator = pipeline(
-    "translation",
-    model=model,
-    tokenizer=tokenizer,
-    src_lang="eng_Latn",
-    tgt_lang="tur_Latn",
-    max_length=400
-)
+target_lang_id = tokenizer.convert_tokens_to_ids("tur_Latn")
 
-test = "Victory! You have defeated the dragon and saved the kingdom."
-res = translator(test)
-print(f" [EN]: {test}")
-print(f" [TR]: {res[0]['translation_text']}")
+test_texts = [
+    "Press START to begin your adventure",
+    "Beware! The ancient dragon has awakened from its thousand-year slumber.",
+    "Your health is low. Drink a health potion before entering the boss room.",
+    "Victory! You have defeated the shadow warlord and saved the realm."
+]
+
+print("---------------- META NLLB-200 CANLI ÇEVİRİ SONUÇLARI ----------------")
+for text in test_texts:
+    inputs = tokenizer(text, return_tensors="pt")
+    translated_tokens = model.generate(**inputs, forced_bos_token_id=target_lang_id, max_length=200)
+    translated_text = tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)[0]
+    print(f" [İngilizce]: {text}")
+    print(f" [Türkçe]   : {translated_text}")
+    print("-" * 65)
+
+print("\n Meta NLLB-200 Model Kurulumu ve Canlı Testi %100 BAŞARIYLA TAMAMLANDI!\n")

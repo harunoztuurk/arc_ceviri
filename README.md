@@ -34,24 +34,41 @@ Aynı zamanda çevrilen tüm kelimeleri **tekrarsız (duplicate-free)** veritaba
 
 ---
 
-## 💻 Kurulum ve Çalıştırma
+## 💻 Sıfırdan Adım Adım Kurulum Rehberi
 
-### Yöntem 1: Tek Tıkla Başlatma (Hızlı)
-Klasör içindeki **`baslat.bat`** dosyasına çift tıklayarak uygulamayı doğrudan çalıştırabilirsiniz.
+Bilgisayarınızda **Python veya gerekli kütüphaneler yüklü değilse**, aşağıdaki adımları sırasıyla takip ederek uygulamayı 2 dakikada hazır hale getirebilirsiniz:
 
 ---
 
-### Yöntem 2: Manuel / Terminal İle Başlatma
+### 1️⃣ Adım 1: Python'u İndirin ve Kurun (Zorunlu)
+1. **[python.org/downloads](https://www.python.org/downloads/)** adresine gidin ve en güncel Python sürümünü indirin.
+2. İndirdiğiniz `.exe` kurulum dosyasını çalıştırın.
+3. ⚠️ **ÇOK ÖNEMLİ:** Kurulum penceresinin en altında bulunan **`Add python.exe to PATH`** kutucuğunu **MUTLAKA İŞARETLEYİN!** *(Bu kutucuk işaretlenmezse komut satırı Python'u algılayamaz).*
+4. **`Install Now`** butonuna basarak kurulumu tamamlayın.
 
-1. **Python 3.10** veya üstü bir sürümün yüklü olduğundan emin olun.
-2. **Bağımlılıkları Yükleyin:**
+---
+
+### 2️⃣ Adım 2: Projeyi Bilgisayarınıza İndirin
+1. Bu GitHub sayfasındaki yeşil **`Code`** butonuna tıklayın ve **`Download ZIP`** seçeneğini seçin.
+2. İnen `.zip` dosyasını bilgisayarınızda istediğiniz bir klasöre çıkartın (örn. Masaüstü).
+
+---
+
+### 3️⃣ Adım 3: Gerekli Paketleri (Kütüphaneleri) Yükleyin
+1. Çıkardığınız **`arc`** klasörünün içine girin.
+2. Klasörün üst adres çubuğuna tıklayın, **`cmd`** yazıp **Enter** tuşuna basın *(Klasör konumunda siyah komut penceresi açılacaktır)*.
+3. Açılan pencereye aşağıdaki komutu kopyalayıp yapıştırın ve **Enter**'a basın:
    ```bash
    pip install -r requirements.txt
    ```
-3. **Uygulamayı Çalıştırın:**
-   ```bash
-   python main.py
-   ```
+   *(Bu komut EasyOCR, PyQt6, OpenCV ve TTS kütüphanelerini otomatik olarak indirecektir. İşlem 1-2 dakika sürebilir).*
+
+---
+
+### 4️⃣ Adım 4: Uygulamayı Çalıştırın 🚀
+
+- **Tek Tıkla Başlatma (Tavsiye Edilen):** Klasör içindeki **`baslat.bat`** dosyasına çift tıklayarak uygulamayı anında başlatabilirsiniz.
+- **Terminal İle Başlatma:** Komut penceresine `python main.py` yazıp **Enter**'a basabilirsiniz.
 
 ---
 

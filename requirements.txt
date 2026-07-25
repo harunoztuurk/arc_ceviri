@@ -6,4 +6,8 @@ requests>=2.31.0
 numpy>=1.24.0
 pynput>=1.7.6
 pyttsx3>=2.90
+transformers>=4.40.0
+torch>=2.0.0
+sentencepiece>=0.2.0
+
 

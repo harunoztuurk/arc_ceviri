@@ -41,7 +41,21 @@ Aynı zamanda çevrilen tüm kelimeleri **tekrarsız (duplicate-free)** veritaba
 
 ## 💻 Sıfırdan Adım Adım Kurulum Rehberi
 
-Bilgisayarınızda **Python veya gerekli kütüphaneler yüklü değilse**, aşağıdaki adımları sırasıyla takip ederek uygulamayı 2 dakikada hazır hale getirebilirsiniz:
+Bilgisayarınızda **Python, kütüphaneler veya yapay zeka modelleri yüklü değilse**, aşağıdaki adımları sırasıyla takip ederek uygulamayı ve Meta NLLB-200 motorunu 2 dakikada hazır hale getirebilirsiniz:
+
+---
+
+### 📋 Yüklenecek Bileşenler ve Kütüphane Listesi
+
+| Bileşen / Paket | İşlevi ve Açıklaması |
+|---|---|
+| 🐍 **Python 3.10+** | Uygulamanın çalışması için gerekli temel programlama dili ortamı. |
+| 🖼️ **PyQt6** | Şeffaf sinema altyazı katmanı (overlay) ve kontrol paneli arayüzü. |
+| 🔍 **EasyOCR & OpenCV** | Ekrandaki oyun altyazılarını %100 doğrulukla metne dönüştüren görüntü işleme motoru. |
+| ⚡ **MSS & Pynput** | Saniyede 10 FPS ultra hızlı ekran yakalama ve global klavye/fare makro dinleyicisi (`Alt+T`). |
+| 🧠 **Transformers, Torch & SentencePiece** | Meta'nın **NLLB-200** yapay zeka modelini bilgisayarınızda çalıştıran derin öğrenme altyapısı. |
+| 🔊 **PyTTSx3** | Defterdeki kelimeleri sesli telaffuz eden seslendirici (TTS). |
+| 🤖 **Ollama & Llama 3** *(İsteğe Bağlı)* | Yerel yapay zeka sunucusu (Port 11434). |
 
 ---
 
@@ -59,18 +73,28 @@ Bilgisayarınızda **Python veya gerekli kütüphaneler yüklü değilse**, aşa
 
 ---
 
-### 3️⃣ Adım 3: Gerekli Paketleri (Kütüphaneleri) Yükleyin
+### 3️⃣ Adım 3: Gerekli Tüm Paketleri (Kütüphaneleri) Yükleyin
 1. Çıkardığınız **`arc`** klasörünün içine girin.
 2. Klasörün üst adres çubuğuna tıklayın, **`cmd`** yazıp **Enter** tuşuna basın *(Klasör konumunda siyah komut penceresi açılacaktır)*.
 3. Açılan pencereye aşağıdaki komutu kopyalayıp yapıştırın ve **Enter**'a basın:
    ```bash
    pip install -r requirements.txt
    ```
-   *(Bu komut EasyOCR, PyQt6, OpenCV ve TTS kütüphanelerini otomatik olarak indirecektir. İşlem 1-2 dakika sürebilir).*
+   *(Bu komut EasyOCR, PyQt6, Meta NLLB-200 PyTorch ve OpenCV kütüphanelerini otomatik olarak indirecektir. İşlem 1-2 dakika sürebilir).*
 
 ---
 
-### 4️⃣ Adım 4: Uygulamayı Çalıştırın 🚀
+### 4️⃣ Adım 4: Meta NLLB-200 Çeviri Motorunu Yükleyin ve Test Edin 🧠
+Meta'nın **NLLB-200 (facebook/nllb-200-distilled-600M)** yapay zeka çeviri modelini bilgisayarınıza indirip canlı çeviri testini çalıştırmak için komut penceresine şu komutu yazın:
+
+```bash
+python run_nllb_local.py
+```
+*(Bu komut Meta'nın resmi NLLB-200 modelini indirecek ve test cümlelerini kusursuz Türkçe ile ekrana basacaktır).*
+
+---
+
+### 5️⃣ Adım 5: Uygulamayı Çalıştırın 🚀
 
 - **Tek Tıkla Başlatma (Tavsiye Edilen):** Klasör içindeki **`baslat.bat`** dosyasına çift tıklayarak uygulamayı anında başlatabilirsiniz.
 - **Terminal İle Başlatma:** Komut penceresine `python main.py` yazıp **Enter**'a basabilirsiniz.

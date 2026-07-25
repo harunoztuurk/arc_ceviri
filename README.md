@@ -80,17 +80,48 @@ Bilgisayarınızda **Python veya gerekli kütüphaneler yüklü değilse**, aşa
 
 ---
 
-## 🤖 Yerel Yapay Zeka (Lokal AI) Kullanımı (İsteğe Bağlı)
+## 🤖 Yerel Yapay Zeka (Lokal AI - Ollama & Llama 3) Kurulum Rehberi
 
-**arc**, bilgisayarınızda çalışan yerel LLM sunucularını otomatik algılar (Port 11434, 1337, 1234).
+**arc**, ekran çevirilerini internete ihtiyaç duymadan tamamen kendi bilgisayarınızda çalışan yerel yapay zeka modelleri (LLM) ile gerçekleştirebilir. **Ollama** ve **Llama 3 (8B Instruct)** modelinin eksiksiz kurulum adımları aşağıdadır:
 
-- **Ollama Kullanıyorsanız:**
-  ```bash
-  ollama run llama-3-8b-instruct
-  ```
-- **LM Studio / Jan.ai Kullanıyorsanız:** Local Server seçeneğini aktif etmeniz yeterlidir.
+---
 
-*(Not: Yerel sunucu kapalıysa arc otomatik olarak hızlı çevrimiçi çeviri altyapısını kullanır.)*
+### 1️⃣ Adım 1: Ollama'yı İndirin ve Kurun
+1. **[ollama.com/download](https://ollama.com/download)** adresine gidin.
+2. **"Download for Windows"** butonuna tıklayarak `OllamaSetup.exe` dosyasını indirin.
+3. İndirilen kurulum dosyasını çalıştırıp **Install** butonuna basarak kurulumu tamamlayın.
+4. *(Kurulum bittiğinde Windows sağ alt araç çubuğunda/sistem tepsisinde Ollama simgesi görünecektir).*
+
+---
+
+### 2️⃣ Adım 2: Llama 3 (8B Instruct) Modelini İndirin ve Çalıştırın
+1. Bilgisayarınızda **Komut İstemcisi (CMD)** veya **PowerShell** uygulamasını açın.
+2. Aşağıdaki komutu yazıp **Enter** tuşuna basın:
+   ```bash
+   ollama run llama-3-8b-instruct
+   ```
+   *(Alternatif olarak Llama 3.1 sürümü için: `ollama run llama3.1` kullanabilirsiniz).*
+3. Ollama yaklaşık **4.7 GB** boyutundaki yapay zeka modelini otomatik olarak indirmeye başlayacaktır.
+
+---
+
+### 3️⃣ Adım 3: Kurulumun Doğrulanması
+- İndirme tamamlandığında terminalde `>>> Send a message (/? for help)` ifadesi görünür. Bu durum modelin sorunsuz kurulduğunu ve çalışmaya hazır olduğunu gösterir.
+- Ollama arka planda **`http://localhost:11434`** adresi üzerinden yerel API sunucusu sunmaya başlar.
+
+---
+
+### 4️⃣ Adım 4: arc Uygulaması İle Otomatik Bağlantı
+- **arc** uygulamasını başlattığınızda (`baslat.bat` veya `python main.py`), sistem otomatik olarak `http://localhost:11434` portunu sorgular.
+- Ollama aktifse çeviriler doğrudan ekran kartınız/işlemciniz üzerinden **Llama 3** ile yapılır.
+- *(Yerel AI kapalıysa veya Ollama çalışmıyorsa arc otomatik olarak kesintisiz hızlı çevrimiçi çeviri motoruna geçer).*
+
+---
+
+### 💡 Faydalı Ollama Komutları
+- **Kurulu modelleri listeleme:** `ollama list`
+- **Model sohbetinden çıkış yapma:** `/bye`
+- **Ollama'yı arka planda tekrar başlatma:** Windows Başlat menüsüne `Ollama` yazıp tıklamanız yeterlidir.
 
 ---
 

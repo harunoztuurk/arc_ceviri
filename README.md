@@ -109,6 +109,40 @@ python run_nllb_local.py
 
 ---
 
+## 🧠 Meta NLLB-200 (No Language Left Behind) Çeviri Motoru Kurulum Rehberi
+
+**Meta NLLB-200 (facebook/nllb-200-distilled-600M)**, Meta AI tarafından geliştirilen ve Türkçe dili için dünyadaki en yüksek doğruluk oranına sahip nöral makine çeviri modelidir. **arc** uygulamasında **Çift Yapay Zeka (Dual-LLM)** katmanında 2. aşama parlatıcı editör olarak çalışır.
+
+---
+
+### 1️⃣ Adım 1: Gerekli Yapay Zeka Paketlerini Yükleyin
+Proje klasöründe terminal (CMD) açıp aşağıdaki komutu kopyalayıp yapıştırın:
+```bash
+pip install transformers torch sentencepiece
+```
+
+---
+
+### 2️⃣ Adım 2: Meta NLLB-200 Model Dosyalarını İndirin ve Test Edin
+Meta'nın resmi 2.4 GB boyutundaki NLLB-200 model ağırlıklarını bilgisayarınıza indirip canlı çeviri testini çalıştırmak için şu komutu yazın:
+
+```bash
+python download_nllb_direct.py
+```
+*(Model otomatik olarak bilgisayarınıza indirilir, test cümleleri kusursuz Türkçe ile ekrana basılır).*
+
+---
+
+### 3️⃣ Adım 3: Kontrol Panelinden Meta NLLB-200'ü Aktif Edin
+1. **`baslat.bat`** dosyasını çalıştırarak uygulamayı açın.
+2. Üst menüden **`⚙️ Ayarlar`** sekmesine geçin.
+3. **`🧠 Çift Yapay Zeka (Dual-LLM & Meta NLLB-200) Akıcı Türkçe Parlatma Modu`** onay kutusunu işaretleyin.
+4. **`💾 Ayarları Kaydet & Uygula`** butonuna basın.
+
+Artık oyunlarda geçen tüm altyazılar **Meta NLLB-200** motoru ile akıcı ve devrik olmayan sinema kalitesinde Türkçe'ye dönüştürülecektir!
+
+---
+
 ## 🤖 Yerel Yapay Zeka (Lokal AI - Ollama & Llama 3) Kurulum Rehberi
 
 **arc**, ekran çevirilerini internete ihtiyaç duymadan tamamen kendi bilgisayarınızda çalışan yerel yapay zeka modelleri (LLM) ile gerçekleştirebilir. **Ollama** ve **Llama 3 (8B Instruct)** modelinin eksiksiz kurulum adımları aşağıdadır:

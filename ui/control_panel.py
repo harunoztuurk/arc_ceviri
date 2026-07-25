@@ -1,6 +1,7 @@
 import sys
 import os
 import logging
+import webbrowser
 from PyQt6.QtWidgets import (
 
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
@@ -201,6 +202,40 @@ class ControlPanelWindow(QMainWindow):
         self.tabs.addTab(self.tab_cards, "📚 Kelime Defteri & Quiz")
 
         main_layout.addWidget(self.tabs)
+
+        # Alt Bilgi Barı ve Sağ Alt Geliştirici & Kick Destek Butonu
+        footer_layout = QHBoxLayout()
+        footer_layout.setContentsMargins(5, 6, 5, 0)
+
+        app_info_label = QLabel("arc v1.2.0 • Gerçek Zamanlı Ekran Çeviri & Oyun Asistanı", self)
+        app_info_label.setFont(QFont("Segoe UI", 9))
+        app_info_label.setStyleSheet("color: #64748B;")
+
+        self.kick_btn = QPushButton("💚 Harun Öztürk tarafından geliştirildi — Desteklerinizi bekleriz (kick.com/harunozturk)", self)
+        self.kick_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.kick_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #1E293B;
+                color: #53FC18;
+                border: 1.5px solid #22C55E;
+                border-radius: 8px;
+                padding: 6px 14px;
+                font-weight: bold;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #15803D;
+                color: #FFFFFF;
+                border-color: #53FC18;
+            }
+        """)
+        self.kick_btn.clicked.connect(lambda: webbrowser.open("https://kick.com/harunozturk"))
+
+        footer_layout.addWidget(app_info_label)
+        footer_layout.addStretch()
+        footer_layout.addWidget(self.kick_btn)
+
+        main_layout.addLayout(footer_layout)
 
     def _setup_live_tab(self, parent: QWidget):
         layout = QVBoxLayout(parent)

@@ -749,16 +749,31 @@ class ControlPanelWindow(QMainWindow):
     def on_mouse_macro_translate(self):
         """
         Triggered globally when Alt+T is pressed.
-        Captures screen area around mouse cursor, runs OCR,
-        translates the word/sentence under the cursor, and displays floating tooltip.
+        Captures screen area around mouse cursor (or screen center if locked in game),
+        runs OCR, translates the word/sentence under the virtual cursor,
+        and renders a virtual mouse pointer & floating translation tooltip.
         """
         try:
+            selected_mon = self.monitor_combo.currentData() or 1
+            if self.overlay is None:
+                self.overlay = TranslationOverlayWindow(target_monitor_index=selected_mon)
+            else:
+                self.overlay.set_target_monitor_index(selected_mon)
+
+            target_geo = self.overlay.get_target_screen_geometry()
             pos = QCursor.pos()
             mx, my = pos.x(), pos.y()
 
-            box_w, box_h = 420, 180
-            left = max(0, mx - box_w // 2)
-            top = max(0, my - box_h // 2)
+            # If cursor is locked, hidden, or out of bounds in 3D game, default to center of active monitor
+            if mx < target_geo.x() or mx > target_geo.x() + target_geo.width() or \
+               my < target_geo.y() or my > target_geo.y() + target_geo.height() or \
+               (mx == 0 and my == 0):
+                mx = target_geo.x() + target_geo.width() // 2
+                my = target_geo.y() + target_geo.height() // 2
+
+            box_w, box_h = 480, 220
+            left = max(target_geo.x(), mx - box_w // 2)
+            top = max(target_geo.y(), my - box_h // 2)
 
             bbox = (left, top, left + box_w, top + box_h)
             from PIL import ImageGrab
@@ -771,7 +786,7 @@ class ControlPanelWindow(QMainWindow):
 
             raw_blocks = self.temp_ocr_reader.extract_text(frame_bgr)
             if not raw_blocks:
-                self.append_log(f"⚠️ Fare konumunda ({mx}, {my}) okunabilir metin bulunamadı.")
+                self.append_log(f"⚠️ Fare/Sanal imleç konumunda ({mx}, {my}) okunabilir metin bulunamadı.")
                 return
 
             cx, cy = box_w // 2, box_h // 2
@@ -796,13 +811,9 @@ class ControlPanelWindow(QMainWindow):
 
             trans_text = self.temp_llm_translator.translate(orig_text)
 
-            selected_mon = self.monitor_combo.currentData() or 1
-            if self.overlay is None:
-                self.overlay = TranslationOverlayWindow(target_monitor_index=selected_mon)
-
             self.overlay.show_mouse_tooltip(orig_text, trans_text, mx, my)
-            self.flashcard_mgr.add_card(english=orig_text, turkish=trans_text, context="Fare Makro Çeviri")
-            self.append_log(f"🖱️ Fare Makro Çeviri (Alt+T): '{orig_text}' ➔ '{trans_text}'")
+            self.flashcard_mgr.add_card(english=orig_text, turkish=trans_text, context="Sanal Fare Makro Çeviri")
+            self.append_log(f"🎯 Sanal Fare Çeviri (Alt+T): '{orig_text}' ➔ '{trans_text}'")
             self.load_cards_table()
         except Exception as e:
             logger.error(f"Error in on_mouse_macro_translate: {e}")

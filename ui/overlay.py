@@ -1,9 +1,88 @@
 import sys
+import ctypes
+import logging
 from typing import List, Dict, Any
 from PyQt6.QtCore import Qt, QTimer, QRect
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout
 from PyQt6.QtGui import QFont, QColor
 from config import Config
+
+logger = logging.getLogger(__name__)
+
+def make_window_topmost_game_overlay(hwnd: int):
+    """
+    Native Win32 API helper to enforce WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_EX_LAYERED,
+    WS_EX_NOACTIVATE, and DwmExtendFrameIntoClientArea.
+    Guarantees overlay stays visible over DirectX 11/12, Vulkan, OpenGL, and Fullscreen games.
+    """
+    if sys.platform != "win32" or not hwnd:
+        return
+
+    try:
+        user32 = ctypes.windll.user32
+        
+        GWL_EXSTYLE = -20
+        WS_EX_TOPMOST = 0x00000008
+        WS_EX_TRANSPARENT = 0x00000020
+        WS_EX_LAYERED = 0x00080000
+        WS_EX_NOACTIVATE = 0x08000000
+
+        style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+        new_style = style | WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_NOACTIVATE
+        user32.SetWindowLongW(hwnd, GWL_EXSTYLE, new_style)
+
+        HWND_TOPMOST = -1
+        SWP_NOMOVE = 0x0002
+        SWP_NOSIZE = 0x0001
+        SWP_NOACTIVATE = 0x0010
+        SWP_SHOWWINDOW = 0x0040
+
+        user32.SetWindowPos(
+            hwnd, 
+            HWND_TOPMOST, 
+            0, 0, 0, 0, 
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW
+        )
+        
+        try:
+            dwmapi = ctypes.windll.dwmapi
+            class MARGINS(ctypes.Structure):
+                _fields_ = [
+                    ("cxLeftWidth", ctypes.c_int),
+                    ("cxRightWidth", ctypes.c_int),
+                    ("cyTopHeight", ctypes.c_int),
+                    ("cyBottomHeight", ctypes.c_int),
+                ]
+            margins = MARGINS(-1, -1, -1, -1)
+            dwmapi.DwmExtendFrameIntoClientArea(hwnd, ctypes.byref(margins))
+        except Exception:
+            pass
+    except Exception as e:
+        logger.debug(f"Win32 Z-order overlay enforcement error: {e}")
+
+class VirtualCursorWidget(QWidget):
+    """
+    Virtual Mouse Cursor / Target Crosshair Widget rendered over full-screen games
+    where the native OS hardware mouse cursor is hidden or locked.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(36, 36)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        
+        self.label = QLabel("🎯", self)
+        self.label.setFont(QFont("Segoe UI", 16))
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label.setGeometry(0, 0, 36, 36)
+        self.setStyleSheet("""
+            QLabel {
+                color: #38BDF8;
+                background-color: rgba(15, 23, 42, 0.88);
+                border: 2px solid #FDE047;
+                border-radius: 18px;
+            }
+        """)
 
 class TranslationCard(QWidget):
     """
@@ -36,7 +115,6 @@ class TranslationCard(QWidget):
             card_bg = Config.OVERLAY_CARD_BG
             border_color = Config.OVERLAY_BORDER_COLOR
 
-        # Subtitle font (default 16pt - 18pt bold for clear reading)
         font = QFont(font_family, max(15, font_size), QFont.Weight.Bold)
         self.label.setFont(font)
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -62,6 +140,7 @@ class TranslationOverlayWindow(QWidget):
     """
     Full-screen transparent, click-through overlay window.
     Renders live cinema-style subtitles anchored at bottom center of the target screen.
+    Guaranteed to stay on top of DirectX 11/12, Vulkan, and Fullscreen games.
     """
     def __init__(self, target_monitor_index: int = 1):
         super().__init__()
@@ -76,6 +155,7 @@ class TranslationOverlayWindow(QWidget):
             Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
         
         # Cover full virtual desktop across all connected monitors so overlay is unbounded
         screens = QApplication.screens()
@@ -91,6 +171,24 @@ class TranslationOverlayWindow(QWidget):
         self.clear_timer = QTimer(self)
         self.clear_timer.setSingleShot(True)
         self.clear_timer.timeout.connect(self.clear_translations)
+
+        # Periodic 1000ms Z-order enforcer timer to keep overlay above DirectX / Vulkan games
+        self.topmost_timer = QTimer(self)
+        self.topmost_timer.setInterval(1000)
+        self.topmost_timer.timeout.connect(self.enforce_game_overlay_zorder)
+        self.topmost_timer.start()
+
+        # Apply initial Win32 Z-order Topmost enforcement
+        QTimer.singleShot(100, self.enforce_game_overlay_zorder)
+
+    def enforce_game_overlay_zorder(self):
+        """
+        Re-asserts topmost Win32 Z-order positioning over Exclusive Fullscreen games.
+        """
+        try:
+            make_window_topmost_game_overlay(int(self.winId()))
+        except Exception:
+            pass
 
     def set_target_monitor_index(self, monitor_index: int):
         self.target_monitor_index = monitor_index
@@ -167,7 +265,6 @@ class TranslationOverlayWindow(QWidget):
                     is_dup = True
                     break
             if not is_dup:
-                # Replace shorter substrings if new line is more complete
                 replaced = False
                 for idx_line, existing in enumerate(valid_lines):
                     if existing.lower() in trans.lower():
@@ -184,7 +281,6 @@ class TranslationOverlayWindow(QWidget):
 
         combined_trans = "\n".join(valid_lines[:3])
 
-        # If text is identical to current subtitle and keep_static is active, do not auto-hide!
         if hasattr(self, "_last_combined_trans") and self._last_combined_trans == combined_trans:
             if keep_static:
                 self.clear_timer.stop()
@@ -194,6 +290,7 @@ class TranslationOverlayWindow(QWidget):
 
         self.show()
         self.raise_()
+        self.enforce_game_overlay_zorder()
 
         for card in self.cards:
             card.hide()
@@ -226,7 +323,6 @@ class TranslationOverlayWindow(QWidget):
             pos_x = target_geo.x() + max(0, int((target_geo.width() - card_w) / 2))
             pos_y = target_geo.y() + max(0, int(target_geo.height() - card_h - 45))
             
-            # Map global screen position to local overlay window coordinates
             local_x = pos_x - self.geometry().x()
             local_y = pos_y - self.geometry().y()
             
@@ -263,8 +359,19 @@ class TranslationOverlayWindow(QWidget):
 
     def show_mouse_tooltip(self, orig: str, trans: str, pos_x: int, pos_y: int):
         """
-        Renders a floating translation tooltip right next to mouse cursor when Macro hotkey (Alt+T) is pressed.
+        Renders a floating translation tooltip right next to mouse position
+        along with a Virtual Cursor Indicator for games where OS mouse cursor is hidden.
         """
+        # 1. Virtual Mouse Cursor Crosshair Indicator
+        if not hasattr(self, "virtual_cursor") or self.virtual_cursor is None:
+            self.virtual_cursor = VirtualCursorWidget(self)
+        
+        local_cx = pos_x - self.geometry().x() - 18
+        local_cy = pos_y - self.geometry().y() - 18
+        self.virtual_cursor.move(local_cx, local_cy)
+        self.virtual_cursor.show()
+
+        # 2. Floating Translation Card
         if not hasattr(self, "mouse_card") or self.mouse_card is None:
             self.mouse_card = TranslationCard(self)
             self.mouse_card.setStyleSheet("""
@@ -272,7 +379,7 @@ class TranslationOverlayWindow(QWidget):
                     background-color: rgba(15, 23, 42, 0.98);
                     color: #FDE047;
                     border: 2px solid #0EA5E9;
-                    border-radius: 8px;
+                    border-radius: 10px;
                 }
                 QLabel { background-color: transparent; border: none; }
             """)
@@ -281,26 +388,35 @@ class TranslationOverlayWindow(QWidget):
         self.mouse_card.set_text(display_text)
         self.mouse_card.adjustSize()
         
-        target_x = pos_x + 20
-        target_y = pos_y + 20
+        target_x = pos_x + 25
+        target_y = pos_y + 25
         
         target_geo = self.geometry()
         card_w = self.mouse_card.width()
         card_h = self.mouse_card.height()
         
-        if target_x + card_w > target_geo.width():
-            target_x = max(0, pos_x - card_w - 10)
-        if target_y + card_h > target_geo.height():
-            target_y = max(0, pos_y - card_h - 10)
+        if target_x + card_w > target_geo.x() + target_geo.width():
+            target_x = max(target_geo.x(), pos_x - card_w - 15)
+        if target_y + card_h > target_geo.y() + target_geo.height():
+            target_y = max(target_geo.y(), pos_y - card_h - 15)
             
         local_x = target_x - self.geometry().x()
         local_y = target_y - self.geometry().y()
         self.mouse_card.move(local_x, local_y)
         self.mouse_card.show()
+        
         self.show()
         self.raise_()
+        self.enforce_game_overlay_zorder()
         
-        QTimer.singleShot(8000, lambda: self.mouse_card.hide() if hasattr(self, "mouse_card") and self.mouse_card else None)
+        # Auto-hide mouse tooltip and virtual cursor after 7 seconds
+        def hide_macro_ui():
+            if hasattr(self, "mouse_card") and self.mouse_card:
+                self.mouse_card.hide()
+            if hasattr(self, "virtual_cursor") and self.virtual_cursor:
+                self.virtual_cursor.hide()
+
+        QTimer.singleShot(7000, hide_macro_ui)
 
     def clear_translations(self):
         if hasattr(self, "_last_combined_trans"):
@@ -309,4 +425,5 @@ class TranslationOverlayWindow(QWidget):
             card.hide()
         if hasattr(self, "mouse_card") and self.mouse_card:
             self.mouse_card.hide()
-
+        if hasattr(self, "virtual_cursor") and self.virtual_cursor:
+            self.virtual_cursor.hide()

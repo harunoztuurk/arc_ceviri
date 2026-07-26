@@ -142,8 +142,8 @@ class AsyncPipelineController(QObject):
 
         now = time.time()
         
-        # Generous safety reset if worker gets stuck > 10 seconds
-        if self.ocr_busy and (now - self.last_ocr_timestamp > 10.0):
+        # Safety reset if worker thread gets stuck > 5 seconds
+        if self.ocr_busy and (now - self.last_ocr_timestamp > 5.0):
             self.ocr_busy = False
             self.trans_busy = False
 
@@ -157,7 +157,9 @@ class AsyncPipelineController(QObject):
             frame = self.capture_engine.capture_frame()
             changed, percentage = self.capture_engine.has_changed(frame)
 
-            if changed or self.last_ocr_timestamp == 0.0:
+            # Trigger OCR scan if frame has changed OR periodically every 2.0s for static text
+            force_periodic = (now - self.last_ocr_timestamp >= 2.0)
+            if changed or force_periodic or self.last_ocr_timestamp == 0.0:
                 self.ocr_busy = True
                 self.last_ocr_timestamp = now
                 self.start_ocr_signal.emit(frame)

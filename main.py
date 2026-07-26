@@ -173,18 +173,31 @@ def run_phase_5():
         pipeline.stop()
         logger.info("--- Aşama 5 completed ---")
 
+import os
+from PyQt6.QtGui import QIcon
 from ui.control_panel import ControlPanelWindow
+from ui.splash import ArcSplashScreen, get_logo_path
 
 def run_gui_app():
     """
-    Launches full Desktop GUI Dashboard application with Control Panel,
+    Launches full Desktop GUI Dashboard application with Splash Screen, Control Panel,
     Region Selector, Flashcards Manager, and Transparent Overlay.
     """
     logger.info("--- Starting arc Desktop Control Panel GUI ---")
     app = QApplication.instance() or QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
+    
+    logo_path = get_logo_path()
+    if logo_path and os.path.exists(logo_path):
+        app.setWindowIcon(QIcon(logo_path))
+    
     window = ControlPanelWindow()
-    window.show()
+    splash = ArcSplashScreen()
+    
+    # When splash screen finishes progress loading, show main window
+    splash.finished.connect(window.show)
+    splash.show()
+    
     sys.exit(app.exec())
 
 def main():

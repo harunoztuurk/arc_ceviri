@@ -14,16 +14,17 @@ logging.getLogger("easyocr").setLevel(logging.ERROR)
 
 logger = logging.getLogger(__name__)
 
-# Limit PyTorch CPU threads so EasyOCR doesn't freeze the system or max out CPU
+# Optimize PyTorch CPU threads for maximum parallel OCR performance
 try:
-    torch.set_num_threads(2)
+    import os
+    torch.set_num_threads(min(4, os.cpu_count() or 4))
 except Exception:
     pass
 
 class OCRReader:
     """
     EasyOCR and OpenCV based text extraction engine.
-    Optimized with frame downscaling and CPU thread limiting to prevent lags and crashes.
+    Optimized with fast multi-threading and downscaling for sub-second real-time performance.
     """
     def __init__(self, languages: List[str] = Config.OCR_LANGUAGES, gpu: bool = Config.OCR_GPU):
         self.languages = languages
@@ -38,10 +39,10 @@ class OCRReader:
 
     def preprocess_image(self, frame: np.ndarray) -> Tuple[np.ndarray, float, float]:
         """
-        Ultra-fast contrast normalization and grayscale conversion for sub-second OCR extraction.
+        Fast contrast normalization with CLAHE for sub-second detection of game & video text.
         """
         h, w = frame.shape[:2]
-        max_dim = 1280
+        max_dim = 1440  # Fast 1440 resolution balance for instant OCR
         
         if max(h, w) > max_dim:
             scale = max_dim / float(max(h, w))
@@ -57,8 +58,9 @@ class OCRReader:
 
         gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
         
-        # Fast contrast stretch for max readability of game & video fonts
-        norm = cv2.normalize(gray, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
+        # Fast contrast stretch for character readability
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        norm = clahe.apply(gray)
         return norm, scale_x, scale_y
 
     def is_app_ui_text(self, text: str) -> bool:
@@ -83,27 +85,31 @@ class OCRReader:
                 
         return False
 
-    def extract_text(self, frame: np.ndarray, min_confidence: float = 0.10) -> List[Dict[str, Any]]:
+    def extract_text(self, frame: np.ndarray, min_confidence: float = 0.05) -> List[Dict[str, Any]]:
         """
-        Runs EasyOCR on image frame with low confidence threshold to capture all words accurately.
+        Runs EasyOCR on image frame with high speed parameters for sub-second translation.
         """
         if frame is None or frame.size == 0:
             return []
 
         try:
             preprocessed, scale_x, scale_y = self.preprocess_image(frame)
-            # High sensitivity EasyOCR parameters
+            # Ultra-fast EasyOCR parameters
             raw_results = self.reader.readtext(
                 preprocessed,
-                contrast_ths=0.05,
-                adjust_contrast=0.7,
+                low_text=0.3,         # Detect thin/faint text
+                text_threshold=0.4,   # Detect stylized fonts
+                link_threshold=0.3,   # Link sentence words
+                mag_ratio=1.1,        # Fast 1.1x magnification ratio
+                contrast_ths=0.02,
+                adjust_contrast=0.8,
                 paragraph=False
             )
 
             structured_results = []
             for bbox, text, conf in raw_results:
                 clean_text = text.strip()
-                if conf < min_confidence or not clean_text or len(clean_text) < 2:
+                if conf < min_confidence or not clean_text or len(clean_text) < 1:
                     continue
 
                 if self.is_app_ui_text(clean_text):

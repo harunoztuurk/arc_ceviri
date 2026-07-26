@@ -1,17 +1,21 @@
 {
     "font_family": "Segoe UI",
-    "font_size": 16,
+    "font_size": 30,
     "text_color": "#FDE047",
-    "card_bg_color": "rgba(15, 23, 42, 0.90)",
+    "card_bg_color": "rgba(15, 23, 42, 0.92)",
     "border_color": "#38BDF8",
     "auto_hide_seconds": 6.0,
     "subtitle_position_mode": "bottom_center",
+    "keep_static_subtitles": true,
     "ocr_languages": [
         "en"
     ],
     "target_language": "tr",
+    "enable_dual_llm": true,
+    "secondary_model": "Meta NLLB-200 (Refiner)",
     "hotkey_toggle": "Ctrl+Shift+S",
     "hotkey_region": "Alt+R",
+    "hotkey_macro": "Alt+T",
     "glossary": {
         "HP": "Can Puanı",
         "MP": "Büyü Puanı",

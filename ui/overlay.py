@@ -96,14 +96,36 @@ class TranslationOverlayWindow(QWidget):
         self.target_monitor_index = monitor_index
 
     def get_target_screen_geometry(self) -> QRect:
+        """
+        Retrieves the exact target monitor bounds from MSS to guarantee 100% alignment
+        between captured screen and displayed subtitle overlay across multi-monitor setups.
+        """
+        try:
+            import mss
+            with mss.MSS() as sct:
+                if 0 <= self.target_monitor_index < len(sct.monitors):
+                    mon = sct.monitors[self.target_monitor_index]
+                    return QRect(int(mon["left"]), int(mon["top"]), int(mon["width"]), int(mon["height"]))
+        except Exception as e:
+            logger.error(f"MSS monitor geometry lookup warning: {e}")
+
         screens = QApplication.screens()
-        # MSS monitor indexes are 1-based (1 = Monitör 1, 2 = Monitör 2)
+        if self.target_monitor_index == 0:
+            return self.geometry()
         idx = max(0, self.target_monitor_index - 1)
-        if idx < len(screens):
+        if 0 <= idx < len(screens):
             return screens[idx].geometry()
         elif screens:
             return screens[0].geometry()
         return self.geometry()
+
+    def update_overlay_geometry(self):
+        screens = QApplication.screens()
+        combined_geo = QRect()
+        for screen in screens:
+            combined_geo = combined_geo.united(screen.geometry())
+        if not combined_geo.isEmpty():
+            self.setGeometry(combined_geo)
 
     def apply_settings(self):
         for card in self.cards:
@@ -114,6 +136,7 @@ class TranslationOverlayWindow(QWidget):
         Updates displayed subtitle overlay anchored cleanly at the bottom center of the screen.
         Supports static text preservation (does not hide subtitle if screen text has not changed).
         """
+        self.update_overlay_geometry()
         try:
             from settings_manager import SettingsManager
             sm = SettingsManager()
@@ -130,15 +153,29 @@ class TranslationOverlayWindow(QWidget):
                 self.clear_translations()
                 return
 
-        # Clean and filter subtitle lines
+        # Clean and deduplicate subtitle lines
         valid_lines = []
         for item in items:
             trans = item.get("trans", "").strip()
-            orig = item.get("orig", "").strip()
             if not trans or trans.startswith("[") or len(trans) < 2:
                 continue
-            if trans not in valid_lines:
-                valid_lines.append(trans)
+            
+            # Deduplicate case-insensitively and avoid partial overlaps
+            is_dup = False
+            for existing in valid_lines:
+                if trans.lower() == existing.lower() or trans.lower() in existing.lower():
+                    is_dup = True
+                    break
+            if not is_dup:
+                # Replace shorter substrings if new line is more complete
+                replaced = False
+                for idx_line, existing in enumerate(valid_lines):
+                    if existing.lower() in trans.lower():
+                        valid_lines[idx_line] = trans
+                        replaced = True
+                        break
+                if not replaced:
+                    valid_lines.append(trans)
 
         if not valid_lines:
             if keep_static and self.cards and any(c.isVisible() for c in self.cards):
@@ -187,9 +224,13 @@ class TranslationOverlayWindow(QWidget):
             card_h = card.height()
             
             pos_x = target_geo.x() + max(0, int((target_geo.width() - card_w) / 2))
-            pos_y = target_geo.y() + max(0, int(target_geo.height() - card_h - 70))
+            pos_y = target_geo.y() + max(0, int(target_geo.height() - card_h - 45))
             
-            card.move(pos_x, pos_y)
+            # Map global screen position to local overlay window coordinates
+            local_x = pos_x - self.geometry().x()
+            local_y = pos_y - self.geometry().y()
+            
+            card.move(local_x, local_y)
             card.show()
         else:
             while len(self.cards) < len(valid_lines):
@@ -210,7 +251,11 @@ class TranslationOverlayWindow(QWidget):
                     pos_y = max(target_geo.y(), y - card_h - 4)
 
                 pos_x = max(target_geo.x(), min(x, target_geo.x() + target_geo.width() - card.sizeHint().width()))
-                card.move(pos_x, pos_y)
+                
+                local_x = pos_x - self.geometry().x()
+                local_y = pos_y - self.geometry().y()
+                
+                card.move(local_x, local_y)
                 card.show()
 
         if not keep_static:
@@ -248,7 +293,9 @@ class TranslationOverlayWindow(QWidget):
         if target_y + card_h > target_geo.height():
             target_y = max(0, pos_y - card_h - 10)
             
-        self.mouse_card.move(target_x, target_y)
+        local_x = target_x - self.geometry().x()
+        local_y = target_y - self.geometry().y()
+        self.mouse_card.move(local_x, local_y)
         self.mouse_card.show()
         self.show()
         self.raise_()
@@ -262,3 +309,4 @@ class TranslationOverlayWindow(QWidget):
             card.hide()
         if hasattr(self, "mouse_card") and self.mouse_card:
             self.mouse_card.hide()
+

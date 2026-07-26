@@ -51,6 +51,36 @@ class LLMTranslator:
             except Exception:
                 continue
 
+    def check_connection(self) -> tuple:
+        """
+        Checks connectivity to local AI endpoints or fallback translation services.
+        Returns (is_connected: bool, status_message: str).
+        """
+        candidates = [
+            ("http://localhost:11434/v1/chat/completions", "Ollama AI (Port 11434)", 11434),
+            ("http://localhost:1337/v1/chat/completions", "Jan.ai AI (Port 1337)", 1337),
+            ("http://localhost:1234/v1/chat/completions", "LM Studio AI (Port 1234)", 1234)
+        ]
+        
+        for url, name, port in candidates:
+            try:
+                res = self.session.get(f"http://localhost:{port}/", timeout=0.6)
+                if res.status_code in (200, 404, 405):
+                    self.api_url = url
+                    return True, f"Yerel Yapay Zeka Sunucusu Bağlandı ({name})"
+            except Exception:
+                continue
+
+        # Check online Google GTX fallback
+        try:
+            res = self.session.get("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=tr&dt=t&q=test", timeout=1.2)
+            if res.status_code == 200:
+                return True, "Çevrimiçi Çeviri Motoru Aktif (Google GTX)"
+        except Exception as e:
+            return False, f"Sunucuya Erişilemedi: Yerel LLM (Jan.ai / Ollama) kapalı ve internet bağlantısı yok. ({e})"
+
+        return False, "Yapay Zeka Sunucusu Bulunamadı! Lütfen Jan.ai veya Ollama uygulamanızı başlatın."
+
     def translate(self, text: str) -> str:
         """
         Translates text from English to Turkish with ultra-low latency (<100ms).

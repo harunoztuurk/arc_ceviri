@@ -1,5 +1,4 @@
 @echo off
 title arc - Gercek Zamanli Ekran Cevirmeni
-echo arc baslatiliyor...
-python main.py
-pause
+start "" pythonw "%~dp0main.py"
+exit
